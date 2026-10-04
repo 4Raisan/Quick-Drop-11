@@ -1,6 +1,7 @@
 const crypto = require('node:crypto');
 const { defaultStore, activeRecords, normalizeRoom, TTL } = require('../lib/storage');
-const MAX_BODY = 64 * 1024;
+const { validateFile } = require('../lib/files');
+const MAX_BODY = 7 * 1024 * 1024;
 
 async function parseBody(req) {
   if (req.body !== undefined) {
@@ -52,16 +53,25 @@ function createHandler(storeFactory = defaultStore) {
         let data;
         try { data = await parseBody(req); }
         catch (err) { return send(err.status || 400, { error: err.status ? err.message : 'Invalid JSON body' }); }
-        if (Buffer.byteLength(JSON.stringify(data)) > 64 * 1024) return send(413, { error: 'Text request body too large' });
-        if (typeof data?.text !== 'string' || !data.text.trim()) return send(400, { error: 'Text content is required' });
+        if (!data?.file && Buffer.byteLength(JSON.stringify(data)) > 64 * 1024) return send(413, { error: 'Text request body too large' });
+        if (typeof data?.text !== 'string' || (!data.text.trim() && !data.file)) return send(400, { error: 'Text content is required' });
         const text = data.text.trim();
         if (text.length > 10000) return send(400, { error: 'Text too long (max 10,000 characters)' });
         if (data.requestId !== undefined && !/^[a-zA-Z0-9_-]{16,80}$/.test(data.requestId)) return send(400, { error: 'Invalid request ID' });
+        let attachment;
+        if (data.file) {
+          try { attachment = validateFile(data.file); } catch (err) { return send(err.status || 400, { error: err.message }); }
+        }
         const requestId = data.requestId || crypto.randomUUID();
         const texts = await activeRecords(store);
         const existing = texts.find(item => item.requestId === requestId);
         if (existing) {
-          if (existing.text !== text || (existing.file?.sha256 || '') !== '') return send(409, { error: 'Request ID already used' });
+          if (existing.text !== text || (existing.file?.sha256 || '') !== (attachment?.metadata.sha256 || '')) return send(409, { error: 'Request ID already used' });
+          if (attachment && existing.file?.pending) {
+            const url = await store.putFile(existing.file.storageId || existing.id, attachment.buffer, attachment.metadata.type);
+            existing.file = { ...attachment.metadata, storageId: existing.file.storageId || existing.id, url };
+            await store.finishFile(existing);
+          }
           return send(200, { success: true, item: existing });
         }
         const now = Date.now();
@@ -74,7 +84,13 @@ function createHandler(storeFactory = defaultStore) {
           try {
             // Claim the ID atomically before writing an attachment. A failed upload
             // retains its claim so a retry uses this same ID.
+            if (attachment) item.file = { ...attachment.metadata, storageId: id + '_' + requestId, pending: true };
             const saved = await store.add(item);
+            if (attachment) {
+              const url = await store.putFile(saved.file.storageId, attachment.buffer, attachment.metadata.type);
+              saved.file = { ...attachment.metadata, storageId: saved.file.storageId, url };
+              await store.finishFile(saved);
+            }
             return send(201, { success: true, item: saved });
           } catch (err) {
             if (err.code === 'ID_TAKEN') continue;

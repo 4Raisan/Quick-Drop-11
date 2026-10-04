@@ -4,6 +4,7 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const apiFilesHandler = require('./api/files.js');
 const apiTextsHandler = require('./api/texts.js');
 
 const PUBLIC_DIR = path.join(__dirname, 'public');
@@ -22,8 +23,8 @@ const MIME_TYPES = {
 // Cache durations (seconds)
 const CACHE_DURATIONS = {
   '.html': 0,
-  '.css': 3600,
-  '.js': 3600,
+  '.css': 0,
+  '.js': 0,
   '.svg': 86400,
   '.png': 86400,
   '.ico': 86400
@@ -34,9 +35,12 @@ function handler(req, res) {
   const reqPath = urlObj.pathname.replace(/\/+/g, '/');
 
   // Check if API route
-  if (reqPath === '/api/texts' || reqPath.startsWith('/api/texts')) {
+  if (reqPath === '/api/texts') {
     return apiTextsHandler(req, res);
   }
+
+
+  if (reqPath === '/api/files') return apiFilesHandler(req, res);
 
   // Otherwise serve static files from public/
   let filePathName = reqPath;
@@ -44,10 +48,13 @@ function handler(req, res) {
     filePathName = '/index.html';
   }
 
-  const filePath = path.join(PUBLIC_DIR, filePathName);
+  let decoded;
+  try { decoded = decodeURIComponent(filePathName); } catch { res.writeHead(400); res.end('Bad Request'); return; }
+  const filePath = path.resolve(PUBLIC_DIR, '.' + decoded);
+  const relative = path.relative(PUBLIC_DIR, filePath);
 
   // Security: prevent directory traversal
-  if (!filePath.startsWith(PUBLIC_DIR)) {
+  if (relative.startsWith('..') || path.isAbsolute(relative)) {
     res.writeHead(403, { 'Content-Type': 'text/plain' });
     res.end('Forbidden');
     return;
@@ -98,7 +105,7 @@ if (require.main === module) {
     process.exit(1);
   });
 
-  server.listen(PORT, () => {
+  server.listen(PORT, '127.0.0.1', () => {
     console.log(`Temp-Transfer running at http://localhost:${PORT}`);
   });
 }
