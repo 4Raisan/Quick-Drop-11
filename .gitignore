@@ -1,8 +1,18 @@
-node_modules
-.vercel
-.env
-.env.local
-.DS_Store
+# Installed dependencies and generated browser bundle
+node_modules/
+public/uploads.bundle.js
 
-.vercel
+# Local state, deployment linkage and credentials
+.data/
+.vercel/
 .env*
+!.env.example
+
+# Logs, caches and editor/OS files
+*.log
+coverage/
+.cache/
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
