@@ -1,6 +1,6 @@
 const { defaultStore, activeRecords } = require('../lib/storage');
 const { readJson, sameOrigin, send } = require('../lib/http');
-const { reserve, pathnameFor } = require('../lib/direct-uploads');
+const { reserve, complete, pathnameFor } = require('../lib/direct-uploads');
 const { MAX_FILE_SIZE } = require('../lib/files');
 module.exports = async (req, res) => {
   if (req.method !== 'POST') return send(res, 405, { error: 'Method not allowed' });
@@ -13,6 +13,11 @@ module.exports = async (req, res) => {
     if (body.action === 'prepare') {
       const item = await reserve(store, body);
       return send(res, 200, { item, pathname: pathnameFor(item) });
+    }
+    if (body.action === 'complete') {
+      const item = (await activeRecords(store)).find(record => record.requestId === body.requestId && record.file);
+      if (!item) return send(res, 404, { error: 'Upload reservation expired' });
+      return send(res, 200, { success: true, item: await complete(store, blob, item) });
     }
     const { handleUpload } = require('@vercel/blob/client');
     const result = await handleUpload({ request: req, body,
