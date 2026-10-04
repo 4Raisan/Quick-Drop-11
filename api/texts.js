@@ -31,12 +31,23 @@ function createHandler(storeFactory = defaultStore) {
       return send(403, { error: 'Cross-origin writes are not allowed' });
     }
     if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
-    if (!['POST'].includes(req.method)) {
-      res.setHeader('Allow', 'POST, OPTIONS');
+    if (!['GET', 'POST', 'DELETE'].includes(req.method)) {
+      res.setHeader('Allow', 'GET, POST, DELETE, OPTIONS');
       return send(405, { error: 'Method not allowed' });
     }
     try {
       const store = storeFactory();
+      if (req.method === 'GET') {
+        const texts = await activeRecords(store);
+        const params = new URL(req.url, 'http://localhost').searchParams;
+        const query = (params.get('q') || '').trim().toLowerCase();
+        if (query.length > 200) return send(400, { error: 'Search is too long' });
+        const matching = texts.filter(item => !item.file?.pending && (item.id + ' ' + item.text + ' ' + (item.file?.name || '')).toLowerCase().includes(query));
+        const results = matching.slice(0, 200);
+        const selected = texts.find(item => !item.file?.pending && item.id === params.get('id'));
+        if (selected && !results.some(item => item.id === selected.id)) results.unshift(selected);
+        return send(200, { texts: results, total: texts.length, matches: matching.length, serverTime: Date.now(), mode: store.mode });
+      }
       if (req.method === 'POST') {
         let data;
         try { data = await parseBody(req); }
@@ -72,6 +83,11 @@ function createHandler(storeFactory = defaultStore) {
         }
         return send(503, { error: 'All 4-digit IDs are in use. Try again after some shares expire.' });
       }
+      const id = new URL(req.url, 'http://localhost').searchParams.get('id');
+      if (!id || !/^[a-zA-Z0-9_-]{1,100}$/.test(id)) return send(400, { error: 'Valid item ID is required' });
+      const record = (await store.list()).find(item => item.id === id);
+      if (record) await store.remove(id, record);
+      return send(200, { success: true });
     } catch (err) {
       console.error('Clipboard storage failure:', err.message);
       return send(503, { error: 'Storage unavailable. Please retry; your text has not been confirmed saved.' });
