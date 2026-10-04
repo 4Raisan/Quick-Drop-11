@@ -4,12 +4,12 @@
   "description": "Community temporary text transfer web app with 24-hour auto-clear and direct copy buttons",
   "main": "server.js",
   "engines": {
-    "node": ">=18"
+    "node": ">=22"
   },
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "build": "echo Built successfully"
+    "build": "esbuild frontend/uploads.js --bundle --platform=browser --minify --outfile=public/uploads.bundle.js"
   },
   "keywords": [
     "temp-transfer",
@@ -23,5 +23,8 @@
   "license": "MIT",
   "dependencies": {
     "@vercel/blob": "^2.8.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
   }
 }
