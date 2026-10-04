@@ -40,6 +40,8 @@ function handler(req, res) {
   }
 
 
+  if (reqPath === '/api/uploads') return require('./api/uploads')(req, res);
+
   if (reqPath === '/api/files') return apiFilesHandler(req, res);
 
   // Otherwise serve static files from public/
