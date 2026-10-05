@@ -68,7 +68,7 @@
   // --- Local Cache Helpers ---
   function getCachedTexts() {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
+      const raw = localStorage.getItem(STORAGE_KEY) || (localStorage.getItem('temptransfer_community_cache'));
       if (!raw) return [];
       const list = JSON.parse(raw);
       return Array.isArray(list) ? purgeExpired(list) : [];
@@ -95,14 +95,6 @@
   function mergeServerTexts(serverTexts) {
     const valid = purgeExpired(serverTexts || []);
 
-    // Check if any of our pending optimistic items have now been confirmed on the server
-    for (const [tempId, pendingItem] of pendingOptimisticItems.entries()) {
-      const match = valid.find(s => s.text === pendingItem.text && Math.abs(s.createdAt - pendingItem.createdAt) < 60000);
-      if (match) {
-        pendingOptimisticItems.delete(tempId);
-      }
-    }
-
     // Build unified list: unconfirmed pending items first, then server items
     const stillPending = Array.from(pendingOptimisticItems.values());
     const combined = [...stillPending];
@@ -123,26 +115,38 @@
   // --- Community API Sync ---
 
   async function fetchCommunityTexts(silent = true) {
-    if (isFetching || isProcessingQueue) return; // Don't poll while uploads are in flight
+    if (isFetching || isWriting || isProcessingQueue) return; // Don't poll while uploads are in flight
     isFetching = true;
+    const version = mutationVersion;
+    const query = currentSearchQuery;
     try {
-      const res = await fetch(`/api/texts?_t=${Date.now()}`, {
+      const res = await apiFetch(`/api/texts?q=${encodeURIComponent(query)}&id=${encodeURIComponent(new URLSearchParams(location.hash.slice(1)).get('text') || '')}&_t=${Date.now()}`, {
         cache: 'no-store',
         headers: { 'Cache-Control': 'no-cache' }
       });
-      if (res.ok) {
+      if (res.ok && version === mutationVersion && query === currentSearchQuery) {
         const data = await res.json();
         if (data && Array.isArray(data.texts)) {
           if (data.serverTime) {
             clockOffset = data.serverTime - Date.now();
           }
-          mergeServerTexts(data.texts);
+          storageMode = data.mode; mergeServerTexts(data.texts);
+          setConnection(data.mode === 'local' ? 'Local preview' : 'Connected');
+          const transferId = new URLSearchParams(location.hash.slice(1)).get('text');
+          if (transferId && !transferShown) {
+            transferShown = true;
+            const item = data.texts.find(t => t.id === transferId);
+            if (item) { textInput.value = item.text; updateInputStats(); textInput.focus(); showToast(item.file ? 'Transfer found — use the file link to download' : 'Transfer found — use Copy to copy the text', 'success'); }
+            else showToast('This snippet has expired or was deleted', 'warning');
+          }
         }
-      }
+      } else if (!res.ok) { setConnection('Connection unavailable'); }
     } catch (err) {
+      setConnection('Offline — uploads will retry');
       if (!silent) console.warn('Could not reach community server:', err.message);
     } finally {
       isFetching = false;
+      if (query !== currentSearchQuery) fetchCommunityTexts(true);
     }
   }
 
@@ -676,10 +680,12 @@
     });
   }
 
-  
+  let searchTimer;
   searchInput.addEventListener('input', (e) => {
     currentSearchQuery = e.target.value.trim();
     renderTexts();
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => fetchCommunityTexts(false), 300);
   });
 
   clearAllBtn.addEventListener('click', clearAllTexts);
@@ -717,7 +723,7 @@
 
   
 
-  
+  document.getElementById('refreshBtn').addEventListener('click', () => fetchCommunityTexts(false));
   
   
   
