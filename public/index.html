@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-  <title>Temp-Transfer | Fast Temporary Text Transfer &amp; 24h Auto-Clear</title>
-  <meta name="description" content="Quickly save and transfer text snippets between devices. One-click copy, and texts automatically clear after 24 hours.">
+  <title>Temp-Transfer | Share Text, Images &amp; PDFs | 11-Hour Expiry</title>
+  <meta name="description" content="Quickly save and transfer text snippets between devices. One-click copy, and texts automatically clear after 11 hours.">
   <meta name="theme-color" content="#0f172a">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -29,14 +29,14 @@
           </div>
           <div>
             <h1 class="brand-title">Temp-Transfer</h1>
-            <p class="brand-subtitle">Community text transfer &bull; Auto-clears in 24 hours</p>
+            <p class="brand-subtitle">Share text, images &amp; PDFs &bull; Find by 4-digit ID</p>
           </div>
         </div>
 
         <div class="header-actions">
-          <div class="community-status-badge" title="Live Community Sync Active across all browsers & devices">
+          <div class="community-status-badge" title="Connection status">
             <span class="live-dot"></span>
-            <span class="live-text">Community Live</span>
+            <span class="live-text">Connecting…</span>
           </div>
           <button id="themeToggle" class="icon-btn" title="Toggle Dark/Light Mode" aria-label="Toggle theme">
             <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -61,27 +61,30 @@
     <!-- Main Content -->
     <main class="main-content">
       <div class="content-container">
-        
+
         <!-- Input Section -->
         <section class="card input-card">
           <div class="input-card-header">
             <label for="textInput" class="input-label">
               <span class="label-dot"></span>
-              Add New Text Snippet
+              Add text or attach a file
             </label>
             <div class="text-stats" id="textStats">0 characters &bull; 0 lines</div>
           </div>
 
-          <div class="textarea-wrapper">
-            <textarea 
-              id="textInput" 
-              placeholder="Paste or type text, code snippets, notes, or links here...&#10;Press Ctrl + Enter to quickly add."
+          <p class="sharing-notice">Public feed · Each share gets a 4-digit ID · Expires in 11 hours</p>
+          <div id="dropZone" class="textarea-wrapper" aria-label="Text and file drop area">
+            <textarea
+              id="textInput"
+              placeholder="Type or paste text, or drop an image/PDF here…"
               rows="5"
+              aria-describedby="fileHint"
               spellcheck="false"
               maxlength="10000"
             ></textarea>
           </div>
 
+          <div class="file-upload-row"><span id="fileHint">Images or PDF · 5 MB max · Drop a file here</span><button id="removeFileBtn" class="btn-text-danger" type="button" hidden>Remove file</button></div>
           <div class="input-card-footer">
             <div class="keyboard-tip">
               <kbd>Ctrl</kbd> + <kbd>Enter</kbd> to add text
@@ -104,12 +107,13 @@
                 Paste
               </button>
 
+              <label class="btn btn-secondary file-picker" for="fileInput">Attach Image/PDF<input id="fileInput" type="file" accept="image/png,image/jpeg,image/webp,application/pdf" aria-label="Attach image or PDF"></label>
               <button id="addBtn" class="btn btn-primary" title="Add text to temporary list">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <line x1="12" y1="5" x2="12" y2="19"></line>
                   <line x1="5" y1="12" x2="19" y2="12"></line>
                 </svg>
-                Add Text
+                Share
               </button>
             </div>
           </div>
@@ -119,23 +123,25 @@
         <section class="texts-section">
           <div class="section-header">
             <div class="section-title-wrap">
-              <h2 class="section-title">Active Texts</h2>
+              <h2 class="section-title">Recent Shares</h2>
               <span id="textCountBadge" class="badge">0</span>
             </div>
 
-            <div class="section-actions" id="sectionActions" style="display: none;">
+            <div class="section-actions" id="sectionActions" >
               <div class="search-box">
                 <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <circle cx="11" cy="11" r="8"></circle>
                   <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                 </svg>
-                <input type="text" id="searchInput" placeholder="Filter texts..." aria-label="Filter texts">
+                <input type="text" id="searchInput" maxlength="200" placeholder="Search ID, text or filename…" aria-label="Search transfers">
               </div>
-              <button id="clearAllBtn" class="btn-text-danger" title="Delete all active texts" aria-label="Clear all community texts">
+              <button id="refreshBtn" class="btn btn-secondary">Refresh</button>
+              <button id="clearAllBtn" class="btn-text-danger" title="Delete all active texts" aria-label="Clear all shared transfers">
                 Clear All
               </button>
             </div>
           </div>
+
 
           <!-- Empty State -->
           <div id="emptyState" class="empty-state">
@@ -148,8 +154,8 @@
                 <polyline points="10 9 9 9 8 9"></polyline>
               </svg>
             </div>
-            <h3>No texts added yet</h3>
-            <p>Type or paste any text above and click <strong>"Add Text"</strong>.<br>Texts remain available and automatically clear 24 hours after being added.</p>
+            <h3>Nothing shared yet</h3>
+            <p>Type or paste any text above and click <strong>"Share"</strong>.<br>Texts remain available and automatically clear 11 hours after being added.</p>
           </div>
 
           <!-- Text Cards Container -->
@@ -167,22 +173,22 @@
             <circle cx="12" cy="12" r="10"></circle>
             <polyline points="12 6 12 12 16 14"></polyline>
           </svg>
-          Texts automatically self-destruct 24 hours after creation. Clean, secure &amp; zero bloat.
+          Snippets expire after 11 hours. Expired stored records are removed when the board is accessed.
         </p>
       </div>
     </footer>
   </div>
 
   <!-- QR Code Modal (for scanning directly to phone) -->
-  <div id="qrModal" class="modal-backdrop" aria-hidden="true" role="dialog" aria-modal="true" aria-label="QR Code Transfer">
+  <div id="qrModal" class="modal-backdrop" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Transfer QR code">
     <div class="modal-card">
       <div class="modal-header">
-        <h3>Scan to Transfer to Phone</h3>
+        <h3>Scan to Open This Transfer</h3>
         <button id="closeModalBtn" class="close-btn" aria-label="Close modal">&times;</button>
       </div>
       <div class="modal-body">
         <div id="qrContainer" class="qr-box"></div>
-        <p class="qr-hint">Scan with your smartphone camera to open and copy this text instantly on mobile.</p>
+        <p class="qr-hint">Scan to open this share. For a local preview, your phone needs a reachable network address.</p>
       </div>
     </div>
   </div>
@@ -192,7 +198,7 @@
 
   <!-- QR Library (lightweight, zero-dep) -->
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js" integrity="sha256-xUHvBjJ4hahBW8qN9gceFBibSFUzbe9PNttUvehITzY=" crossorigin="anonymous"></script>
-  <!-- Main Logic -->
-  <script src="script.js"></script>
+  <script src="uploads.bundle.js?v=4.1"></script><!-- Main Logic -->
+  <script src="script.js?v=4.1"></script>
 </body>
 </html>

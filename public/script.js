@@ -31,10 +31,10 @@
   const qrModal = document.getElementById('qrModal');
   const qrContainer = document.getElementById('qrContainer');
   const closeModalBtn = document.getElementById('closeModalBtn');
-  
-  
-  
-  
+  const fileInput = document.getElementById('fileInput');
+  const fileHint = document.getElementById('fileHint');
+  let selectedAttachment = null;
+  const dropZone = document.getElementById('dropZone');
 
   let storageMode = null;
   let currentSearchQuery = '';
@@ -402,11 +402,12 @@
   }
 
   // --- Add Text Button ---
-  function handleAddText() {
+  async function handleAddText() {
+    if (addBtn.disabled) return;
     const raw = textInput.value;
     const content = raw.trim();
 
-    if (!content) {
+    if (!content && !selectedAttachment) {
       showToast('Please type or paste some text first', 'danger');
       textInput.focus();
       return;
@@ -417,7 +418,24 @@
       return;
     }
 
-    queueNewText(content);
+    let file = null;
+    if (selectedAttachment) {
+      const selected = selectedAttachment;
+      if (selected.size > 5 * 1024 * 1024 || !['image/png','image/jpeg','image/webp','application/pdf'].includes(selected.type)) {
+        showToast('Choose a PNG, JPEG, WebP or PDF up to 5 MB', 'danger'); return;
+      }
+      addBtn.disabled = true;
+      try {
+        const base64 = await new Promise((resolve, reject) => {
+          const reader = new FileReader(); reader.onload = () => resolve(reader.result.split(',')[1]);
+          reader.onerror = reject; reader.readAsDataURL(selected);
+        });
+        file = { name: selected.name, type: selected.type, base64 };
+      } catch { showToast('Could not read this file', 'danger'); return; }
+      finally { addBtn.disabled = false; }
+    }
+    if (!queueNewText(content, file)) return;
+    clearAttachment();
 
     // Clear input box
     textInput.value = '';
@@ -427,8 +445,9 @@
 
   // --- Clear Input Box Button ---
   function handleClearInput() {
-    if (!textInput.value) return;
+    if (!textInput.value && !selectedAttachment) return;
     textInput.value = '';
+    clearAttachment();
     updateInputStats();
     showToast('Input box cleared', 'success');
     textInput.focus();
@@ -724,19 +743,50 @@
   
 
   document.getElementById('refreshBtn').addEventListener('click', () => fetchCommunityTexts(false));
-  
-  
-  
-  
-  
-  
-  
-  
-  
+  function clearAttachment() {
+    selectedAttachment = null;
+    fileInput.value = '';
+    fileHint.textContent = 'Images or PDF · 5 MB max · Drop a file here';
+    document.getElementById('removeFileBtn').hidden = true;
+    dropZone.classList.remove('has-attachment');
+  }
+  function selectAttachment(files) {
+    if (addBtn.disabled) { showToast('Wait for the current file to finish reading', 'warning'); return false; }
+    if (!files?.length) return false;
+    if (files.length !== 1) { showToast('Add one image or PDF per share', 'danger'); return false; }
+    const file = files[0];
+    if (file.size > 5 * 1024 * 1024 || !['image/png','image/jpeg','image/webp','application/pdf'].includes(file.type)) {
+      showToast('Choose a PNG, JPEG, WebP or PDF up to 5 MB', 'danger'); fileInput.value = ''; return false;
+    }
+    selectedAttachment = file;
+    fileHint.textContent = file.name + ' · ' + Math.ceil(file.size / 1024) + ' KB';
+    document.getElementById('removeFileBtn').hidden = false;
+    dropZone.classList.add('has-attachment');
+    return true;
+  }
+  fileInput.addEventListener('change', () => { if (!fileInput.files?.length) return; selectAttachment(fileInput.files); });
+  document.getElementById('removeFileBtn').addEventListener('click', clearAttachment);
+  let dragDepth = 0;
+  dropZone.addEventListener('dragenter', event => {
+    if (!Array.from(event.dataTransfer?.types || []).includes('Files')) return;
+    event.preventDefault(); dragDepth++; dropZone.classList.add('drag-over');
+  });
+  dropZone.addEventListener('dragover', event => {
+    if (!Array.from(event.dataTransfer?.types || []).includes('Files')) return;
+    event.preventDefault(); event.dataTransfer.dropEffect = 'copy';
+  });
+  dropZone.addEventListener('dragleave', () => { if (--dragDepth <= 0) { dragDepth = 0; dropZone.classList.remove('drag-over'); } });
+  dropZone.addEventListener('drop', event => {
+    if (!event.dataTransfer?.files?.length) return;
+    event.preventDefault(); event.stopPropagation(); dragDepth = 0; dropZone.classList.remove('drag-over');
+    selectAttachment(event.dataTransfer.files);
+  });
   // Files dropped elsewhere must not replace the page with a local document.
-  
-  
-  
+  document.addEventListener('dragover', event => { if (Array.from(event.dataTransfer?.types || []).includes('Files')) event.preventDefault(); });
+  document.addEventListener('drop', event => { if (event.dataTransfer?.files?.length) event.preventDefault(); });
+  textInput.addEventListener('paste', event => {
+    if (event.clipboardData?.files?.length) { event.preventDefault(); selectAttachment(event.clipboardData.files); }
+  });
   // --- Init ---
   initTheme();
   communityTexts = getCachedTexts().filter(t => !t.isPending);
