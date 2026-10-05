@@ -945,3 +945,89 @@ kbd {
     flex: 1;
   }
 }
+
+.sharing-notice { color: var(--text-secondary); font-size: .85rem; line-height: 1.5; margin: 0 0 1rem; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
+
+/* Shared feed: readable full-width rows and a comfortable composer. */
+.main-content { padding: 26px 20px 32px; }
+.content-container { max-width: 1080px; gap: 24px; }
+.header-container { max-width: 1120px; padding: 16px 20px; }
+.brand-title { font-size: 1.4rem; }
+.brand-subtitle { font-size: .85rem; }
+.card.input-card { padding: 22px; }
+.input-card-header { margin-bottom: 8px; }
+.input-label { font-size: 1.05rem; }
+.sharing-notice { font-size: .82rem; margin: 0 0 12px; }
+textarea#textInput { min-height: 144px; height: 144px; padding: 14px; font-size: .95rem; line-height: 1.5; }
+.file-upload-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 12px 0; }
+.file-upload-row span { color: var(--text-secondary); font-size: .8rem; }
+.file-upload-row [hidden] { display: none; }
+.input-card-footer { margin-top: 12px; gap: 14px; }
+.btn { padding: 9px 14px; font-size: .85rem; min-height: 39px; }
+.input-card-footer .btn-group { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; }
+.keyboard-tip { font-size: .78rem; }
+.file-picker { position: relative; cursor: pointer; white-space: nowrap; }
+.file-picker input { position: absolute; inset: 0; width: 100%; opacity: 0; cursor: pointer; }
+.file-picker:focus-within { outline: 2px solid var(--accent-primary); outline-offset: 3px; }
+#dropZone { border-radius: 12px; }
+#dropZone.drag-over { outline: 2px dashed var(--accent-primary); outline-offset: 3px; background: var(--accent-glow); }
+#dropZone.has-attachment textarea { border-color: var(--accent-primary); }
+.texts-section { gap: 14px; }
+.section-header { gap: 14px; }
+.section-title { font-size: 1.1rem; }
+.section-actions { gap: 10px; }
+.search-box input { width: 280px; font-size: .85rem; }
+.search-box input:focus { width: 280px; }
+.text-grid { display: grid; grid-template-columns: minmax(0,1fr); gap: 12px; }
+.text-card.compact-card { padding: 14px 16px; gap: 10px; min-width: 0; border-radius: 14px; }
+.compact-heading { display: flex; justify-content: space-between; align-items: center; gap: 14px; color: var(--text-secondary); font-size: .8rem; }
+.share-heading-left, .share-heading-right { display: flex; align-items: center; gap: 10px; }
+.share-heading-left { flex-shrink: 0; }
+.share-heading-right { margin-left: auto; }
+.share-id { font: 700 1.05rem var(--font-mono); color: var(--accent-primary); }
+.share-heading-right button { flex: none; min-height: 32px; padding: 5px 11px; font-size: .8rem; }
+.share-heading-right .symbol-button { width: 32px; padding: 6px; display: inline-flex; align-items: center; justify-content: center; }
+.symbol-button svg { width: 17px; height: 17px; }
+.share-heading-right .card-expiry-badge { margin: 0; padding: 3px 8px; font-size: .75rem; white-space: nowrap; }
+.compact-content { min-width: 0; }
+.compact-content .card-text { padding: 10px 12px; max-height: 100px; font-size: .9rem; line-height: 1.5; overflow: auto; }
+.attachment { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.attachment-image { width: 86px; height: 62px; object-fit: cover; border-radius: 8px; }
+.attachment-link { color: var(--accent-primary); font-size: .9rem; overflow-wrap: anywhere; }
+.file-icon { flex-shrink: 0; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; font-size: .85rem; }
+.file-caption { margin-top: 8px; font-size: .85rem; max-height: 60px; overflow: auto; }
+.empty-state { padding: 30px; }
+.app-footer { padding: 16px 20px; font-size: .78rem; }
+@media (max-width:640px) {
+  .main-content { padding: 16px 12px 24px; }
+  .content-container { gap: 18px; }
+  .card.input-card { padding: 16px; }
+  textarea#textInput { height: 128px; min-height: 128px; }
+  .input-card-footer { flex-wrap: wrap; }
+  .keyboard-tip { display: none; }
+  .input-card-footer .btn-group { width: 100%; gap: 7px; }
+  .input-card-footer .btn-group .btn { flex: 1; justify-content: center; padding: 8px 9px; font-size: .8rem; }
+  .section-actions { width: 100%; }
+  .search-box { flex: 1; min-width: 0; }
+  .search-box input, .search-box input:focus { width: 100%; }
+  .text-card.compact-card { padding: 12px; }
+  .share-heading-left, .share-heading-right { gap: 7px; }
+  .compact-heading { gap: 8px; }
+  .share-heading-right button { min-height: 30px; padding: 4px 8px; }
+  .share-heading-right .symbol-button { width: 30px; }
+}
+@media (max-width:400px) {
+  .share-heading-left, .share-heading-right { gap: 5px; }
+  .share-id { font-size: .95rem; }
+  .card-time-text { font-size: .7rem; }
+  .share-heading-right .card-expiry-badge { padding: 2px 5px; font-size: .65rem; }
+  .share-heading-right .symbol-button { width: 26px; padding: 4px; }
+  .share-heading-right button { padding: 4px 7px; font-size: .7rem; }
+  .input-card-footer .btn-group { display: grid; grid-template-columns: 1fr 1fr; }
+}
+
+@media (min-width: 1000px) {
+  .text-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+}
+

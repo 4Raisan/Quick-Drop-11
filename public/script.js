@@ -470,7 +470,7 @@
     if (totalCount === 0) {
       emptyState.style.display = 'flex';
       textList.innerHTML = '';
-      sectionActions.style.display = 'none';
+      sectionActions.style.display = 'flex';
       return;
     }
 
@@ -480,13 +480,13 @@
     let filtered = valid;
     if (currentSearchQuery) {
       const q = currentSearchQuery.toLowerCase();
-      filtered = valid.filter(item => item.text.toLowerCase().includes(q));
+      filtered = valid.filter(item => (item.id + ' ' + item.text + ' ' + (item.file?.name || '')).toLowerCase().includes(q));
     }
 
     if (filtered.length === 0) {
       textList.innerHTML = `
         <div class="empty-state" style="padding: 2rem;">
-          <p>No texts match "${escapeHtml(currentSearchQuery)}"</p>
+          <p>No transfers match "${escapeHtml(currentSearchQuery)}"</p>
         </div>
       `;
       return;
@@ -500,7 +500,7 @@
       const relativeTime = formatRelativeTime(item.createdAt);
       const exactTime = new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       const charCount = item.text.length;
-      const lines = item.text.split('\n').length;
+      const lines = item.text ? item.text.split('\n').length : 0;
 
       const isPending = item.isPending;
       const pendingBadge = isPending 
@@ -508,63 +508,19 @@
         : '';
 
       return `
-        <article class="text-card" data-id="${escapeHtml(item.id)}" data-expires="${item.expiresAt}" data-created="${item.createdAt}">
-          <div class="text-card-header">
-            <div class="card-time" title="${new Date(item.createdAt).toLocaleString()}">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"></circle>
-                <polyline points="12 6 12 12 16 14"></polyline>
-              </svg>
-              <span class="card-time-text">Added ${relativeTime} (${exactTime})</span>
-              ${pendingBadge}
+        <article class="text-card compact-card" data-id="${escapeHtml(item.id)}" data-expires="${item.expiresAt}" data-created="${item.createdAt}">
+          <div class="compact-heading">
+            <div class="share-heading-left"><span class="share-id">${item.isPending ? 'Sending…' : '#' + escapeHtml(item.id)}</span><span class="card-time-text">${relativeTime}</span></div>
+            <div class="share-heading-right">
+              ${!item.file ? '<button class="btn-copy" data-action="copy" aria-label="Copy this text snippet to clipboard">Copy</button>' : ''}
+              <button class="btn-card-action symbol-button" data-action="qr" title="Show QR code" aria-label="Generate QR code for this transfer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="15" y="3" width="6" height="6" rx="1"/><rect x="3" y="15" width="6" height="6" rx="1"/><path d="M15 15h3v3h3v3h-6v-3m6-3v-3m-9-9v9H3m9 3v6"/></svg></button>
+              <span class="card-expiry-badge ${statusClass}"><span class="countdown-text">${expiryText}</span></span>
+              <button class="btn-card-action btn-card-danger symbol-button" data-action="delete" title="Delete share" aria-label="Delete this transfer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"/></svg></button>
             </div>
-            <span class="card-expiry-badge ${statusClass}" title="Auto-deletes for everyone in 24 hours">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"></circle>
-                <line x1="12" y1="6" x2="12" y2="12"></line>
-              </svg>
-              <span class="countdown-text">${expiryText}</span>
-            </span>
           </div>
-
-          <div class="text-card-body">
-            <div class="card-text">${linkify(item.text)}</div>
-          </div>
-
-          <div class="text-card-footer">
-            <div class="card-meta-info">
-              ${charCount} char${charCount === 1 ? '' : 's'} &bull; ${lines} line${lines === 1 ? '' : 's'}
-            </div>
-
-            <div class="card-actions">
-              <!-- Direct Copy Button -->
-              <button class="btn-copy" data-action="copy" title="Copy text directly to clipboard" aria-label="Copy this text snippet to clipboard">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                </svg>
-                Copy Text
-              </button>
-
-              <!-- QR Code Transfer Button -->
-              <button class="btn-card-action" data-action="qr" title="Scan to open on phone" aria-label="Generate QR code for this text">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <rect x="3" y="3" width="7" height="7"></rect>
-                  <rect x="14" y="3" width="7" height="7"></rect>
-                  <rect x="14" y="14" width="7" height="7"></rect>
-                  <rect x="3" y="14" width="7" height="7"></rect>
-                </svg>
-                QR
-              </button>
-
-              <!-- Delete Single Button -->
-              <button class="btn-card-action btn-card-danger" data-action="delete" title="Delete this text now" aria-label="Delete this text snippet">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="3 6 5 6 21 6"></polyline>
-                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                </svg>
-              </button>
-            </div>
+          <div class="compact-content">
+            ${item.file ? renderAttachment(item) : `<div class="card-text">${linkify(item.text)}</div>`}
+            ${item.file && item.text ? `<div class="file-caption">${linkify(item.text)}</div>` : ''}
           </div>
         </article>
       `;
@@ -596,7 +552,7 @@
         const timeText = card.querySelector('.card-time-text');
         if (timeText && createdAt) {
           const exactTime = new Date(createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-          timeText.textContent = `Added ${formatRelativeTime(createdAt)} (${exactTime})`;
+          timeText.textContent = formatRelativeTime(createdAt);
         }
       }
     });
@@ -608,14 +564,16 @@
   }
 
   // --- QR Code Modal ---
-  function openQrModal(text) {
+  function openQrModal(item) {
     if (!qrContainer) return;
     qrContainer.innerHTML = '';
 
     if (typeof QRCode !== 'undefined') {
       try {
         // Encode to handle multi-byte UTF-8 characters
-        const safeText = text.length > 2000 ? text.slice(0, 2000) : text;
+        if (item.isPending) { showToast('Wait for this snippet to finish saving', 'warning'); return; }
+        const safeText = location.origin + '/#text=' + encodeURIComponent(item.id);
+        qrReturnFocus = document.activeElement;
         new QRCode(qrContainer, {
           text: safeText,
           width: 200,
@@ -640,6 +598,7 @@
   function closeQrModal() {
     qrModal.classList.remove('show');
     qrModal.setAttribute('aria-hidden', 'true');
+    if (qrReturnFocus && qrReturnFocus.isConnected) qrReturnFocus.focus();
   }
 
   // --- Event Delegation ---
@@ -658,7 +617,7 @@
     if (action === 'copy') {
       copyTextToClipboard(item.text, target);
     } else if (action === 'qr') {
-      openQrModal(item.text);
+      openQrModal(item);
     } else if (action === 'delete') {
       deleteTextItem(id);
     }
@@ -740,7 +699,19 @@
     try { localStorage.setItem(THEME_KEY, isLight ? 'light' : 'dark'); } catch (err) {}
   });
 
-  
+  function renderAttachment(item) {
+    const file = item.file;
+    const name = escapeHtml(file.name);
+    if (item.isPending || !file.url) return `<div class="attachment">Attachment pending: ${name}</div>`;
+    let safeUrl;
+    try {
+      const parsed = new URL(file.url, location.origin);
+      if (parsed.protocol !== 'https:' && parsed.origin !== location.origin) return '';
+      safeUrl = escapeHtml(parsed.href);
+    } catch { return ''; }
+    const image = file.type.startsWith('image/') ? `<img class="attachment-image" src="${safeUrl}" alt="${name}" loading="lazy">` : '<span class="file-icon">PDF</span>';
+    return `<div class="attachment">${image}<a class="attachment-link" href="${safeUrl}" target="_blank" rel="noopener noreferrer" download="${name}">${name} · ${Math.ceil(file.size / 1024)} KB ↗</a></div>`;
+  }
 
   document.getElementById('refreshBtn').addEventListener('click', () => fetchCommunityTexts(false));
   function clearAttachment() {
