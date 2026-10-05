@@ -1,16 +1,18 @@
 /**
  * Temp-Transfer - Community Synchronized Text Transfer
- * Real-time community shared clipboard with 24-hour auto-clear
+ * Real-time community shared clipboard with 11-hour auto-clear
  */
 
 (function () {
   'use strict';
 
   // --- Constants & Config ---
-  const STORAGE_KEY = 'temptransfer_community_cache';
+  const STORAGE_KEY = 'temptransfer_shared_cache';
+  const OUTBOX_KEY = 'temptransfer_shared_outbox';
   const THEME_KEY = 'temptransfer_theme';
-  const EXPIRATION_MS = 24 * 60 * 60 * 1000; // Exactly 24 hours
-  const POLL_INTERVAL = 5000; // Poll community updates every 5 seconds (reduced from 3s to save API quota)
+  // Preserve device-local state from the previous app name.
+  
+  const EXPIRATION_MS = 11 * 60 * 60 * 1000; // Exactly 11 hours
 
   // --- DOM Elements ---
   const textInput = document.getElementById('textInput');
@@ -29,7 +31,12 @@
   const qrModal = document.getElementById('qrModal');
   const qrContainer = document.getElementById('qrContainer');
   const closeModalBtn = document.getElementById('closeModalBtn');
+  
+  
+  
+  
 
+  let storageMode = null;
   let currentSearchQuery = '';
   let communityTexts = [];
   let isFetching = false;
@@ -39,6 +46,22 @@
 
   // Sequential upload queue to handle rapid fast pasting without race conditions
   const uploadQueue = [];
+  let mutationVersion = 0;
+  let qrReturnFocus = null;
+  let transferShown = false;
+
+  function saveOutbox() {
+    localStorage.setItem(OUTBOX_KEY, JSON.stringify(uploadQueue));
+  }
+
+  async function apiFetch(url, options = {}) {
+    return fetch(url, { ...options, signal: AbortSignal.timeout(15000) });
+  }
+
+  function setConnection(message) {
+    const badge = document.querySelector('.live-text');
+    if (badge) badge.textContent = message;
+  }
   let isProcessingQueue = false;
   const pendingOptimisticItems = new Map(); // tempId -> item
 
@@ -123,141 +146,108 @@
     }
   }
 
-  function queueNewText(content) {
+  function queueNewText(content, file = null) {
     const now = Date.now();
-    const tempId = 'temp_' + now + '_' + Math.random().toString(36).slice(2, 6);
+    const requestId = crypto.randomUUID();
+    const tempId = 'temp_' + requestId;
     const optimisticItem = {
       id: tempId,
       text: content,
       createdAt: now,
       expiresAt: now + EXPIRATION_MS,
-      isPending: true
+      isPending: true,
+      file: file ? { name: file.name, type: file.type, size: Math.floor(file.base64.length * 3 / 4) } : undefined
     };
 
     // Add to optimistic map and UI immediately
     pendingOptimisticItems.set(tempId, optimisticItem);
     communityTexts.unshift(optimisticItem);
     renderTexts();
-    showToast('Adding to community...', 'success');
+    showToast('Adding to the shared feed...', 'success');
 
     // Enqueue task for sequential upload
-    uploadQueue.push({ tempId, content });
+    uploadQueue.push({ tempId, content, requestId, createdAt: now, file });
+    try { saveOutbox(); } catch (err) {
+      uploadQueue.pop(); pendingOptimisticItems.delete(tempId);
+      communityTexts = communityTexts.filter(t => t.id !== tempId); renderTexts();
+      showToast('Device storage is full; transfer was not queued. Keep the input or select a smaller file.', 'danger');
+      return false;
+    }
     processUploadQueue();
+    return true;
   }
 
   async function processUploadQueue() {
-    if (isProcessingQueue) return;
+    if (isProcessingQueue || isWriting || !uploadQueue.length) return;
     isProcessingQueue = true;
     isWriting = true;
-
-    while (uploadQueue.length > 0) {
-      const task = uploadQueue[0];
-      try {
-        const res = await fetch('/api/texts', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: task.content })
-        });
-
-        if (res.ok) {
-          const data = await res.json();
-          pendingOptimisticItems.delete(task.tempId);
-          uploadQueue.shift();
-
-          if (data && Array.isArray(data.texts)) {
-            mergeServerTexts(data.texts);
-            showToast('Added! Visible to everyone across devices', 'success');
-          }
-        } else if (res.status === 409) {
-          pendingOptimisticItems.delete(task.tempId);
-          uploadQueue.shift();
-          showToast('Duplicate text — already added', 'warning');
-          const data = await res.json().catch(() => ({}));
-          if (data && Array.isArray(data.texts)) {
-            mergeServerTexts(data.texts);
-          }
-        } else if (res.status === 413) {
-          pendingOptimisticItems.delete(task.tempId);
-          uploadQueue.shift();
-          showToast('Text too large to save', 'danger');
-          communityTexts = communityTexts.filter(t => t.id !== task.tempId);
-          renderTexts();
-        } else {
-          pendingOptimisticItems.delete(task.tempId);
-          uploadQueue.shift();
-          const errData = await res.json().catch(() => ({}));
-          showToast(errData.error || 'Failed to add text', 'danger');
-          communityTexts = communityTexts.filter(t => t.id !== task.tempId);
-          renderTexts();
-        }
-      } catch (e) {
-        showToast('Saved locally, will sync when reconnected', 'warning');
-        pendingOptimisticItems.delete(task.tempId);
-        uploadQueue.shift();
-      }
-    }
-
-    isWriting = false;
-    isProcessingQueue = false;
-  }
-
-  async function deleteTextItem(id) {
-    if (pendingOptimisticItems.has(id)) {
-      pendingOptimisticItems.delete(id);
-      const idx = uploadQueue.findIndex(q => q.tempId === id);
-      if (idx !== -1) uploadQueue.splice(idx, 1);
-    }
-
-    const removed = communityTexts.find(t => t.id === id);
-    communityTexts = communityTexts.filter(t => t.id !== id);
-    setCachedTexts(communityTexts);
-    renderTexts();
-    showToast('Text removed', 'success');
-
-    // If it was only an optimistic item that hadn't reached the server, don't call DELETE API
-    if (id.startsWith('temp_')) {
-      return;
-    }
-
-    isWriting = true;
+    mutationVersion++;
     try {
-      const res = await fetch(`/api/texts?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
-      if (res.ok) {
-        const data = await res.json();
-        if (data && data.texts) {
-          mergeServerTexts(data.texts);
+      while (uploadQueue.length) {
+        const task = uploadQueue[0];
+        try {
+          if (task.file && !storageMode && window.transferUploads) { const modeResponse = await apiFetch('/api/stats'); if (!modeResponse.ok) throw new Error('Storage unavailable'); storageMode = (await modeResponse.json()).mode; }
+          const res = task.file && storageMode === 'community' && window.transferUploads ? await window.transferUploads.share(task) : await apiFetch('/api/texts', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: task.content, requestId: task.requestId, file: task.file })
+          });
+          const data = await res.json();
+          if (res.status >= 500 || res.status === 429) throw new Error(data.error || 'Server unavailable');
+          if (!res.ok) {
+            textInput.value = task.content; updateInputStats();
+            showToast(data.error || 'Upload rejected — text restored to input', 'danger');
+          } else {
+            communityTexts = communityTexts.filter(t => t.id !== task.tempId && t.id !== data.item.id);
+            communityTexts.unshift(data.item);
+            showToast('Shared — ID ' + data.item.id, 'success');
+          }
+          uploadQueue.splice(uploadQueue.indexOf(task), 1);
+          pendingOptimisticItems.delete(task.tempId);
+          communityTexts = communityTexts.filter(t => t.id !== task.tempId);
+          saveOutbox(); setCachedTexts(communityTexts); renderTexts();
+        } catch (err) {
+          setConnection('Waiting to reconnect');
+          showToast('Upload pending on this device; retrying when connected', 'warning');
+          break;
         }
-      }
-    } catch (e) {
-      if (removed) {
-        communityTexts.unshift(removed);
-        communityTexts.sort((a, b) => b.createdAt - a.createdAt);
-        setCachedTexts(communityTexts);
-        renderTexts();
-        showToast('Delete failed — restored text', 'danger');
       }
     } finally {
       isWriting = false;
+      isProcessingQueue = false;
     }
+    fetchCommunityTexts(true);
+  }
+
+  async function deleteTextItem(id) {
+    if (isWriting) { showToast('Please wait for the current operation', 'warning'); return false; }
+    if (id.startsWith('temp_')) {
+      const index = uploadQueue.findIndex(t => t.tempId === id);
+      if (index !== -1) uploadQueue.splice(index, 1);
+      pendingOptimisticItems.delete(id); saveOutbox();
+      communityTexts = communityTexts.filter(t => t.id !== id);
+      setCachedTexts(communityTexts); renderTexts(); return true;
+    }
+    isWriting = true;
+    mutationVersion++;
+    try {
+      const res = await apiFetch(`/api/texts?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Delete failed');
+      communityTexts = communityTexts.filter(t => t.id !== id);
+      setCachedTexts(communityTexts); renderTexts();
+      return true;
+    } catch (err) {
+      showToast('Delete failed — text was kept', 'danger'); return false;
+    } finally { isWriting = false; }
   }
 
   async function clearAllTexts() {
-    if (communityTexts.length === 0) return;
-    if (!confirm(`Are you sure you want to clear all ${communityTexts.length} community text snippet(s)?\n\nThis will delete them one by one.`)) return;
-
-    showToast('Clearing texts...', 'success');
-    const idsToDelete = communityTexts.map(t => t.id);
-
-    // Delete each item individually (no bulk wipe endpoint)
-    for (const id of idsToDelete) {
-      try {
-        await fetch(`/api/texts?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
-      } catch (e) {}
-    }
-
-    // Refresh from server
+    if (isWriting || !communityTexts.length) return;
+    if (!confirm('Delete all visible snippets from the shared feed?')) return;
+    const ids = communityTexts.map(t => t.id);
+    let deleted = 0;
+    for (const id of ids) { if (await deleteTextItem(id)) deleted++; }
+    showToast(`Deleted ${deleted} of ${ids.length} snippets`, deleted === ids.length ? 'success' : 'warning');
     await fetchCommunityTexts(true);
-    showToast('All community texts cleared', 'success');
   }
 
   // --- UI Helpers ---
@@ -399,7 +389,7 @@
     }
 
     try {
-      document.execCommand('copy');
+      if (!document.execCommand('copy')) throw new Error('Copy denied');
       onSuccess();
     } catch (err) {
       showToast('Unable to copy text directly', 'danger');
@@ -686,6 +676,7 @@
     });
   }
 
+  
   searchInput.addEventListener('input', (e) => {
     currentSearchQuery = e.target.value.trim();
     renderTexts();
@@ -699,6 +690,7 @@
   });
 
   document.addEventListener('keydown', (e) => {
+    if (e.key === 'Tab' && qrModal.classList.contains('show')) { e.preventDefault(); closeModalBtn.focus(); }
     if (e.key === 'Escape' && qrModal.classList.contains('show')) {
       closeQrModal();
     }
@@ -706,7 +698,8 @@
 
   // --- Theme Toggle ---
   function initTheme() {
-    const saved = localStorage.getItem(THEME_KEY);
+    let saved;
+    try { saved = localStorage.getItem(THEME_KEY); } catch (err) {}
     if (saved === 'light') {
       document.body.classList.remove('dark-theme');
       document.body.classList.add('light-theme');
@@ -719,45 +712,48 @@
   themeToggle.addEventListener('click', () => {
     const isLight = document.body.classList.toggle('light-theme');
     document.body.classList.toggle('dark-theme', !isLight);
-    localStorage.setItem(THEME_KEY, isLight ? 'light' : 'dark');
+    try { localStorage.setItem(THEME_KEY, isLight ? 'light' : 'dark'); } catch (err) {}
   });
 
-  // --- Polling Control (pause when tab hidden) ---
-  function startPolling() {
-    if (pollIntervalId) return;
-    pollIntervalId = setInterval(() => fetchCommunityTexts(true), POLL_INTERVAL);
-  }
+  
 
-  function stopPolling() {
-    if (pollIntervalId) {
-      clearInterval(pollIntervalId);
-      pollIntervalId = null;
-    }
-  }
-
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  // Files dropped elsewhere must not replace the page with a local document.
+  
+  
+  
   // --- Init ---
   initTheme();
-  communityTexts = getCachedTexts();
+  communityTexts = getCachedTexts().filter(t => !t.isPending);
+  try {
+    const jobs = JSON.parse(localStorage.getItem(OUTBOX_KEY) || (localStorage.getItem('temptransfer_outbox_v2')) || '[]');
+    if (Array.isArray(jobs)) for (const task of jobs) {
+      if (typeof task.content !== 'string' || !/^[a-zA-Z0-9_-]{16,80}$/.test(task.requestId) || !Number.isFinite(task.createdAt)) continue;
+      if (Date.now() - task.createdAt >= EXPIRATION_MS) continue;
+      uploadQueue.push(task);
+      const item = { id: task.tempId, text: task.content, createdAt: task.createdAt, expiresAt: task.createdAt + EXPIRATION_MS, isPending: true, file: task.file ? { name: task.file.name, type: task.file.type } : undefined };
+      pendingOptimisticItems.set(task.tempId, item); communityTexts.unshift(item);
+    }
+  } catch (err) {}
+  processUploadQueue();
+  window.addEventListener('online', processUploadQueue);
+  setInterval(() => { if (navigator.onLine && uploadQueue.length) processUploadQueue(); }, 15000);
   renderTexts();
   updateInputStats();
 
   // Initial fetch from community backend
   fetchCommunityTexts(false);
 
-  // Start polling
-  startPolling();
-
-  // Update live countdown timers every second (also updates "Added X ago")
+  // Expiry countdowns run locally; refresh the feed on demand.
   setInterval(updateCountdowns, 1000);
-
-  // Pause polling when tab is hidden, resume when visible
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') {
-      fetchCommunityTexts(true);
-      startPolling();
-    } else {
-      stopPolling();
-    }
-  });
 
 })();
