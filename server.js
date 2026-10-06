@@ -39,8 +39,8 @@ function handler(req, res) {
     return apiTextsHandler(req, res);
   }
 
-
   if (reqPath === '/api/uploads') return require('./api/uploads')(req, res);
+  if (reqPath === '/api/stats') return require('./api/stats')(req, res);
 
   if (reqPath === '/api/files') return apiFilesHandler(req, res);
 
