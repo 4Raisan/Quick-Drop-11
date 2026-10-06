@@ -9,7 +9,9 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "build": "esbuild frontend/uploads.js --bundle --platform=browser --minify --outfile=public/uploads.bundle.js"
+    "build": "esbuild frontend/uploads.js --bundle --platform=browser --minify --outfile=public/uploads.bundle.js && node --check api/uploads.js && node --check api/stats.js && node --check lib/direct-uploads.js && node --check public/stats.js && node --check server.js && node --check api/texts.js && node --check lib/storage.js && node --check public/script.js && node --check api/cleanup.js && node --check scripts/migrate-legacy.js && node --check api/files.js && node --check lib/files.js",
+    "test": "node --test",
+    "migrate": "node scripts/migrate-legacy.js"
   },
   "keywords": [
     "temp-transfer",
