@@ -32,6 +32,7 @@ flowchart LR
 
 The frontend, upload handling, stats and storage adapters are separate modules. Production file uploads go directly to Blob; the API authorizes and verifies them before publishing a share. Local development uses isolated disk storage.
 
+See the [architecture guide](docs/ARCHITECTURE.md) for component, upload-sequence and expiry diagrams, plus a debugging map. The [brand kit](docs/brand/README.md) includes the icon, wordmark and banner.
 
 ## Run locally
 
