@@ -1031,3 +1031,6 @@ textarea#textInput { min-height: 144px; height: 144px; padding: 14px; font-size:
   .text-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 }
 
+#statsDialog { width: min(520px, calc(100% - 32px)); padding: 24px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 18px; } #statsDialog::backdrop { background: rgba(0,0,0,.65); } .stats-heading { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; } .stats-heading h2 { font-size: 1.2rem; } #statsContent dl { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; font-size: .85rem; } #statsContent dd { margin: 0; overflow-wrap: anywhere; } #statsContent dt, #statsContent p { color: var(--text-secondary); } #statsContent p { margin-top: 20px; font-size: .8rem; line-height: 1.6; }
+
+#statsDialog { margin: auto; background: #101a2c; max-height: calc(100vh - 40px); overflow: auto; } body.light-theme #statsDialog { background: #fff; }

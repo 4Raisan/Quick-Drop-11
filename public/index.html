@@ -34,7 +34,7 @@
         </div>
 
         <div class="header-actions">
-          <div class="community-status-badge" title="Connection status">
+          <button id="statsButton" class="icon-btn" title="Site stats" aria-label="Site stats"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10m8 10V4m8 16v-7"/></svg></button><div class="community-status-badge" title="Connection status">
             <span class="live-dot"></span>
             <span class="live-text">Connecting…</span>
           </div>
@@ -198,7 +198,7 @@
 
   <!-- QR Library (lightweight, zero-dep) -->
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js" integrity="sha256-xUHvBjJ4hahBW8qN9gceFBibSFUzbe9PNttUvehITzY=" crossorigin="anonymous"></script>
-  <script src="uploads.bundle.js?v=4.1"></script><!-- Main Logic -->
+  <dialog id="statsDialog" aria-labelledby="statsTitle"><div class="stats-heading"><h2 id="statsTitle">Site stats</h2><button id="closeStats" class="icon-btn" aria-label="Close stats">×</button></div><div id="statsContent" aria-live="polite"></div></dialog><script src="stats.js?v=4.1"></script><script src="uploads.bundle.js?v=4.1"></script><!-- Main Logic -->
   <script src="script.js?v=4.1"></script>
 </body>
 </html>
