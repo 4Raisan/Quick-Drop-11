@@ -1,56 +1,105 @@
-# Temp-Transfer ⚡
+# Quick Drop
 
-A minimalist, high-speed web application for quickly sharing and transferring temporary text snippets across devices and users, with automatic 24-hour expiration, direct one-click copy buttons, and community-wide real-time sync.
+Share text, images and PDFs through a single public feed. Each share gets a **four-digit ID** so users can find it during busy periods. Shares expire after **11 hours**.
 
-🌐 **Live**: [temptransfer.vercel.app](https://temptransfer.vercel.app)
+**Quick start:** [Run locally](#run-locally) · [Deploy](#deploy-to-vercel) · [Architecture](#architecture-at-a-glance) · [Stats and privacy](#public-stats-and-privacy)
 
----
+## Features
 
-## ✨ Features
+- Search by ID, text or filename across active shares; up to 200 matches per search.
+- One PNG, JPEG, WebP or PDF attachment per share, up to **5 MiB (5,242,880 bytes)**; text up to 10,000 characters.
+- Attach through the file button, drag-and-drop into the text area, or paste supported clipboard files. Text can accompany an attachment.
+- Copy for text shares, QR links and communal deletion. File shares have download links instead of Copy.
+- Two columns on screens at least 1000 px wide; one column on smaller screens.
+- Manual Refresh, dark/light themes, and an offline upload queue that retries with the same request ID.
+- An icon beside the connection badge opens public aggregate site stats.
 
-- **Community Sync**: All text snippets are shared in real-time across all users and devices. Add text on one device, see it everywhere.
-- **Direct One-Click Copy**: Every saved text card has a prominent "Copy Text" button that immediately copies text to clipboard with instant visual feedback.
-- **24-Hour Auto-Clear**: All saved snippets automatically self-destruct exactly 24 hours after creation. Active real-time countdown timer is displayed on every card.
-- **Clear Text Box**: Dedicated "Clear Box" button to wipe the input field instantly.
-- **Quick Keyboard Shortcuts**: Press `Ctrl + Enter` (or `Cmd + Enter`) to instantly add text.
-- **QR Code Transfer**: Scan any text card with your phone's camera to transfer the text directly to mobile.
-- **Dark & Light Mode**: Clean, glassmorphic UI with responsive mobile-friendly layouts.
+IDs range from 0000 to 9999, with at most 10,000 active reservations. Slots can be reused after expiry or deletion. There are no chat rooms or accounts.
 
-> **Note**: This is a community clipboard — all texts are visible to anyone visiting the site. Do not share sensitive information like passwords or private keys.
+## Architecture at a glance
 
----
+```mermaid
+flowchart LR
+    Browser[Browser UI] --> API[Node.js API handlers]
+    API --> Store[Storage adapter]
+    Store -->|Local development| Disk[(Local disk)]
+    Store -->|Production| Blob[(Vercel Blob)]
+    Browser -->|Authorized direct file uploads| Blob
+    Cron[Daily cleanup] --> API
+```
 
-## 🚀 Running Locally
+The frontend, upload handling, stats and storage adapters are separate modules. Production file uploads go directly to Blob; the API authorizes and verifies them before publishing a share. Local development uses isolated disk storage.
 
-```bash
-npm install
+
+## Run locally
+
+Requires Node.js 22 or newer.
+
+```sh
+npm ci
+npm run build
 npm start
 ```
-Open [http://localhost:3000](http://localhost:3000) in your browser.
 
----
+Open http://localhost:3000. Run the build again after changing `frontend/uploads.js`; it creates the ignored browser bundle. Local shares persist in `.data/`, separately from production. The development server binds to loopback and does not automatically load `.env.local` or production credentials.
 
-## ☁️ Deploying to Vercel
+## Deploy to Vercel
 
-### Option 1: Via Vercel CLI
-```bash
-npx vercel
+1. Import the GitHub repository into Vercel and connect a public Vercel Blob store.
+2. Configure the server-side `BLOB_READ_WRITE_TOKEN` and `CRON_SECRET` environment variables. See `.env.example`; never commit populated credentials.
+3. Set the build command to `npm run build` and the output directory to `public`. Keep the root `api/` functions enabled.
+4. Optionally set `PUBLIC_STORAGE_ALLOWANCE_BYTES` to match your plan. Its default is 1,000,000,000 bytes, displayed as the Hobby monthly allowance.
+5. Verify text sharing, a 5 MiB attachment, retry behavior, search, deletion, stats and scheduled cleanup on the deployment before relying on it.
+
+Production attachments go **browser → Vercel Blob**, using short-lived upload tokens restricted to a reserved pathname, content type and size. The server checks the stored file's size, basic byte signature and SHA-256 before publishing its share. Large file bytes do not pass through the Vercel Function request body. Local uploads use the local file store.
+
+`/api/cleanup` uses `CRON_SECRET` and the daily schedule in `vercel.json`. Feed access also removes expired records. Physical removal is periodic, rather than guaranteed at the exact expiry second. Cleanup removes sufficiently old orphan attachments as well.
+
+Vercel has separate storage, transfer and operation allowances. See [Blob usage and pricing](https://vercel.com/docs/vercel-blob/usage-and-pricing) for current limits. Direct uploads bypass the Function payload limit; they do not increase storage allowances. The public app does not enforce a global billing quota.
+
+## Public stats and privacy
+
+The stats popup shows active share count, current stored bytes, space below the configured allowance, file limits and the last check time. Live storage totals include all objects in the connected Blob store. Local totals describe local share metadata and attachments, not cloud billing.
+
+Current stored bytes are a snapshot, **not monthly billed usage**. Exact monthly storage remaining, download remaining and operation balances are unavailable in this implementation and are labeled accordingly. The private Vercel dashboard remains the source for billing usage. Stats are cached for five minutes per server instance.
+
+Stats responses contain aggregate numbers only. They do not expose credentials, environment variables, account identifiers or file lists. Upload authorization uses server-side credentials; the browser receives a scoped temporary upload token.
+
+The feed and attachment URLs are public. Four-digit IDs are lookup shortcuts, not passwords. Deletion is communal. The app validates file type and signature but does not scan for malware. Local downloads enforce expiry; public Blob URLs may remain accessible until physical deletion, and downloaded or cached copies cannot be recalled. The persistent upload queue uses browser local storage and can be constrained by browser quota, especially for several large attachments.
+
+## Project structure
+
+| Path | Purpose |
+| --- | --- |
+| `public/` | Page, styles, main UI and separate stats UI |
+| `frontend/uploads.js` | Direct upload client, bundled during build |
+| `api/texts.js`, `api/files.js` | Feed, text mutations and downloads |
+| `api/uploads.js`, `lib/direct-uploads.js` | Upload reservation, scoped tokens and verification |
+| `api/stats.js` | Public aggregate stats |
+| `api/cleanup.js` | Scheduled cleanup |
+| `lib/` | Storage adapters, file validation and HTTP helpers |
+| `server.js` | Local development server |
+| `tests/` | API, client and upload tests with small fixtures |
+| `.github/workflows/validate.yml` | GitHub build and test checks |
+| `docs/` | Architecture diagrams, debugging guide and SVG brand assets |
+
+## Validation
+
+```sh
+npm run build
+npm test
 ```
-Follow the quick prompts:
-1. Set project name: `temptransfer`
-2. Deploy to production: `npx vercel --prod`
 
-### Option 2: Via GitHub Integration
-1. Push this repository to GitHub:
-   ```bash
-   git add .
-   git commit -m "Initial commit for Temp-Transfer"
-   gh repo create temptransfer --public --source=. --push
-   ```
-2. Import the repository in [vercel.com/new](https://vercel.com/new).
-3. Set Project Name to `temptransfer`.
-4. Click **Deploy**. Vercel will assign `temptransfer.vercel.app`.
+The build generates the upload bundle and checks JavaScript syntax. Tests cover concurrent sharing, ID collisions, retries, file validation including 5 MiB files, storage failures, search, expiry and deletion. Live Blob integration requires a configured deployment check; local tests do not prove live credentials or provider configuration.
 
-### Environment Variables
-Set these in your Vercel project settings:
-- `BLOB_READ_WRITE_TOKEN` — Your Vercel Blob storage token
+## Legacy migration
+
+`npm run migrate` previews import of older production snapshots. `npm run migrate -- --apply` imports active shares with four-digit IDs and their remaining lifetime. Stop old writers and review the dry run first. The script preserves source snapshots and explicitly reads `.env.local` when invoked. It is not part of normal startup.
+
+## GitHub contents
+
+Commit source, tests, `package-lock.json`, configuration, `.env.example`, this README and the MIT license. `.gitignore` excludes installed dependencies, the generated upload bundle, `.data/`, `.vercel/`, populated environment files, logs and caches. Build the bundle after a fresh clone; do not commit secrets or local share data.
+
+## Rename compatibility
+
+Quick Drop preserves browser cache, theme and queued uploads from the earlier Temp-Transfer name. Existing storage paths and four-digit share links remain compatible. QUICK_DROP_STORAGE is the optional local remote-storage switch; the previous TEMP_TRANSFER_STORAGE variable remains a compatibility fallback. Renaming the app does not change an existing Vercel project name, domain or GitHub repository name.

@@ -1,5 +1,5 @@
 /**
- * Temp-Transfer - Community Synchronized Text Transfer
+ * Quick Drop - Community Synchronized Text Transfer
  * Real-time community shared clipboard with 11-hour auto-clear
  */
 
@@ -7,11 +7,22 @@
   'use strict';
 
   // --- Constants & Config ---
-  const STORAGE_KEY = 'temptransfer_shared_cache';
-  const OUTBOX_KEY = 'temptransfer_shared_outbox';
-  const THEME_KEY = 'temptransfer_theme';
+  const STORAGE_KEY = 'quickdrop_shared_cache';
+  const OUTBOX_KEY = 'quickdrop_shared_outbox';
+  const THEME_KEY = 'quickdrop_theme';
   // Preserve device-local state from the previous app name.
-  
+  for (const [current, previous] of [
+    [STORAGE_KEY, 'temptransfer_shared_cache'],
+    [OUTBOX_KEY, 'temptransfer_shared_outbox'],
+    [THEME_KEY, 'temptransfer_theme'],
+    ['quickdrop_community_cache', 'temptransfer_community_cache'],
+    ['quickdrop_outbox_v2', 'temptransfer_outbox_v2']
+  ]) {
+    try {
+      const oldValue = localStorage.getItem(previous);
+      if (localStorage.getItem(current) === null && oldValue !== null) localStorage.setItem(current, oldValue);
+    } catch { /* Storage may be unavailable; retain the original state. */ }
+  }
   const EXPIRATION_MS = 11 * 60 * 60 * 1000; // Exactly 11 hours
 
   // --- DOM Elements ---
@@ -68,7 +79,7 @@
   // --- Local Cache Helpers ---
   function getCachedTexts() {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY) || (localStorage.getItem('temptransfer_community_cache'));
+      const raw = localStorage.getItem(STORAGE_KEY) || (localStorage.getItem('quickdrop_community_cache'));
       if (!raw) return [];
       const list = JSON.parse(raw);
       return Array.isArray(list) ? purgeExpired(list) : [];
@@ -762,7 +773,7 @@
   initTheme();
   communityTexts = getCachedTexts().filter(t => !t.isPending);
   try {
-    const jobs = JSON.parse(localStorage.getItem(OUTBOX_KEY) || (localStorage.getItem('temptransfer_outbox_v2')) || '[]');
+    const jobs = JSON.parse(localStorage.getItem(OUTBOX_KEY) || (localStorage.getItem('quickdrop_outbox_v2')) || '[]');
     if (Array.isArray(jobs)) for (const task of jobs) {
       if (typeof task.content !== 'string' || !/^[a-zA-Z0-9_-]{16,80}$/.test(task.requestId) || !Number.isFinite(task.createdAt)) continue;
       if (Date.now() - task.createdAt >= EXPIRATION_MS) continue;

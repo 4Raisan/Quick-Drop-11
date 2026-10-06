@@ -1,7 +1,7 @@
 {
-  "name": "temptransfer",
+  "name": "quickdrop",
   "version": "1.1.0",
-  "description": "Community temporary text transfer web app with 24-hour auto-clear and direct copy buttons",
+  "description": "Public text, image and PDF sharing with four-digit IDs and 11-hour expiry",
   "main": "server.js",
   "engines": {
     "node": ">=22"
@@ -14,7 +14,7 @@
     "migrate": "node scripts/migrate-legacy.js"
   },
   "keywords": [
-    "temp-transfer",
+    "quick-drop",
     "text-transfer",
     "clipboard",
     "temporary-notes",
