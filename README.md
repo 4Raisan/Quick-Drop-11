@@ -1,3 +1,5 @@
+![Quick Drop — share it, find it, move on](docs/brand/banner.svg)
+
 # Quick Drop
 
 Share text, images and PDFs through a single public feed. Each share gets a **four-digit ID** so users can find it during busy periods. Shares expire after **11 hours**.
