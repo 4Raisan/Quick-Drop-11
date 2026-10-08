@@ -1,11 +1,5 @@
 {
   "cleanUrls": true,
-  "rewrites": [
-    {
-      "source": "/api/texts",
-      "destination": "/api/texts.js"
-    }
-  ],
   "crons": [
     {
       "path": "/api/cleanup",
