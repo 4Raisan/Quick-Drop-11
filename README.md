@@ -20,15 +20,7 @@ IDs range from 0000 to 9999, with at most 10,000 active reservations. Slots can 
 
 ## Architecture at a glance
 
-```mermaid
-flowchart LR
-    Browser[Browser UI] --> API[Node.js API handlers]
-    API --> Store[Storage adapter]
-    Store -->|Local development| Disk[(Local disk)]
-    Store -->|Production| Blob[(Vercel Blob)]
-    Browser -->|Authorized direct file uploads| Blob
-    Cron[Daily cleanup] --> API
-```
+![Quick Drop architecture](docs/diagrams/overview.svg)
 
 The frontend, upload handling, stats and storage adapters are separate modules. Production file uploads go directly to Blob; the API authorizes and verifies them before publishing a share. Local development uses isolated disk storage.
 
