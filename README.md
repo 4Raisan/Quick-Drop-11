@@ -47,7 +47,7 @@ Use the [Supabase setup guide](docs/SUPABASE.md) and `supabase/schema.sql` to co
 ## Deploy to Vercel
 
 1. Import the GitHub repository into Vercel and configure Supabase using the guide above, or connect a public Supabase Storage (or legacy Vercel Blob) store for the legacy backend.
-2. Configure `QUICK_DROP_STORAGE_PROVIDER=supabase`, `QUICK_DROP_SUPABASE_URL`, `QUICK_DROP_SUPABASE_SERVICE_KEY` and `CRON_SECRET` on the server. See `.env.example`; never commit populated credentials.
+2. Configure `QUICK_DROP_STORAGE=supabase`, `QUICK_DROP_SUPABASE_URL`, `QUICK_DROP_SUPABASE_SERVICE_KEY` and `CRON_SECRET` on the server. See `.env.example`; never commit populated credentials.
 3. Set the build command to `npm run build` and the output directory to `public`. Keep the root `api/` functions enabled.
 4. Optionally set `QUICK_DROP_STORAGE_ALLOWANCE_BYTES` to match your plan. Its default is 1,000,000,000 bytes, displayed as the configured storage capacity.
 5. Verify text sharing, a 5 MiB attachment, retry behavior, search, deletion, stats and scheduled cleanup on the deployment before relying on it.

@@ -5,7 +5,7 @@ Quick Drop supports Supabase Postgres for share metadata and a private Storage b
 1. Create a free Supabase project named Quick Drop. Keep its database password private.
 2. Run `supabase/schema.sql` in the SQL editor. It creates `quickdrop_shares`, a private `quickdrop-files` bucket, a 5 MiB size/type restriction and a server-only storage statistics function.
 3. Configure these variables in Vercel, then redeploy:
-   - `QUICK_DROP_STORAGE_PROVIDER=supabase`
+   - `QUICK_DROP_STORAGE=supabase`
    - `QUICK_DROP_SUPABASE_URL`: project API URL
    - `QUICK_DROP_SUPABASE_SERVICE_KEY`: server-only service-role or compatible secret API key
    - `CRON_SECRET`: retain the existing cleanup secret
