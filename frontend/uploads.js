@@ -2,7 +2,7 @@ import { upload } from '@vercel/blob/client';
 async function post(data) {
   const response = await fetch('/api/uploads', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data), signal: AbortSignal.timeout(30000) });
   const body = await response.json();
-  if (!response.ok) throw new Error(body.error || 'Upload unavailable');
+  if (!response.ok) throw Object.assign(new Error(body.error || 'Upload unavailable'), { code: body.code });
   return body;
 }
 window.transferUploads = {

@@ -73,7 +73,7 @@
     const badge = document.querySelector('.live-text');
     if (badge) badge.textContent = message;
   }
-  let isProcessingQueue = false;
+  let isProcessingQueue = false; let storageSuspended = false;
   const pendingOptimisticItems = new Map(); // tempId -> item
 
   // --- Local Cache Helpers ---
@@ -193,7 +193,7 @@
   }
 
   async function processUploadQueue() {
-    if (isProcessingQueue || isWriting || !uploadQueue.length) return;
+    if (storageSuspended || isProcessingQueue || isWriting || !uploadQueue.length) return;
     isProcessingQueue = true;
     isWriting = true;
     mutationVersion++;
@@ -207,7 +207,7 @@
             body: JSON.stringify({ text: task.content, requestId: task.requestId, file: task.file })
           });
           const data = await res.json();
-          if (res.status >= 500 || res.status === 429) throw new Error(data.error || 'Server unavailable');
+          if (res.status >= 500 || res.status === 429) throw Object.assign(new Error(data.error || 'Server unavailable'), { code: data.code });
           if (!res.ok) {
             textInput.value = task.content; updateInputStats();
             showToast(data.error || 'Upload rejected — text restored to input', 'danger');
@@ -221,8 +221,9 @@
           communityTexts = communityTexts.filter(t => t.id !== task.tempId);
           saveOutbox(); setCachedTexts(communityTexts); renderTexts();
         } catch (err) {
-          setConnection('Waiting to reconnect');
-          showToast('Upload pending on this device; retrying when connected', 'warning');
+          storageSuspended = err.code === 'STORAGE_SUSPENDED';
+          setConnection(storageSuspended ? 'Storage suspended' : 'Upload waiting to retry');
+          showToast(storageSuspended ? err.message : 'Upload pending on this device; retrying when connected', 'warning');
           break;
         }
       }
@@ -724,7 +725,7 @@
     return `<div class="attachment">${image}<a class="attachment-link" href="${safeUrl}" target="_blank" rel="noopener noreferrer" download="${name}">${name} · ${Math.ceil(file.size / 1024)} KB ↗</a></div>`;
   }
 
-  document.getElementById('refreshBtn').addEventListener('click', () => fetchCommunityTexts(false));
+  document.getElementById('refreshBtn').addEventListener('click', () => { storageSuspended = false; processUploadQueue(); fetchCommunityTexts(false); });
   function clearAttachment() {
     selectedAttachment = null;
     fileInput.value = '';

@@ -2,6 +2,7 @@ const { defaultStore, activeRecords } = require('../lib/storage');
 const { readJson, sameOrigin, send } = require('../lib/http');
 const { reserve, complete, pathnameFor } = require('../lib/direct-uploads');
 const { MAX_FILE_SIZE } = require('../lib/files');
+const { publicStorageError } = require('../lib/storage-error');
 module.exports = async (req, res) => {
   if (req.method !== 'POST') return send(res, 405, { error: 'Method not allowed' });
   if (!sameOrigin(req)) return send(res, 403, { error: 'Cross-origin uploads are not allowed' });
@@ -29,5 +30,5 @@ module.exports = async (req, res) => {
       }
     });
     return send(res, 200, result);
-  } catch (err) { console.error('Upload service failure:', err.name, err.message); return send(res, err.status || 503, { error: err.status ? err.message : 'Upload service unavailable; please retry' }); }
+  } catch (err) { console.error('Upload service failure:', err.name, err.message); return send(res, err.status || 503, err.status ? { error: err.message } : publicStorageError(err)); }
 };

@@ -2,6 +2,7 @@ const crypto = require('node:crypto');
 const { defaultStore, activeRecords, normalizeRoom, TTL } = require('../lib/storage');
 const { validateFile } = require('../lib/files');
 const MAX_BODY = 7 * 1024 * 1024;
+const { publicStorageError } = require('../lib/storage-error');
 
 async function parseBody(req) {
   if (req.body !== undefined) {
@@ -106,7 +107,7 @@ function createHandler(storeFactory = defaultStore) {
       return send(200, { success: true });
     } catch (err) {
       console.error('Clipboard storage failure:', err.message);
-      return send(503, { error: 'Storage unavailable. Please retry; your text has not been confirmed saved.' });
+      return send(503, publicStorageError(err));
     }
   };
 }
