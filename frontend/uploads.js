@@ -18,7 +18,12 @@ window.transferUploads = {
       const completed = await post({ action: 'complete', requestId: task.requestId });
       return new Response(JSON.stringify(completed), { status: 200 });
     } catch { /* No uploaded object yet. */ }
-    await upload(prepared.pathname, new Blob([bytes], { type: task.file.type }), { access: 'public', contentType: task.file.type, handleUploadUrl: '/api/uploads', clientPayload: JSON.stringify({ requestId: task.requestId }), multipart: false });
+    if (prepared.provider === 'supabase') {
+      const response = await fetch(prepared.signedUploadUrl, { method: 'PUT', headers: { 'Content-Type': task.file.type, 'x-upsert': 'false' }, body: bytes, signal: AbortSignal.timeout(120000) });
+      if (!response.ok) throw new Error('File transfer failed; your upload remains queued');
+    } else {
+      await upload(prepared.pathname, new Blob([bytes], { type: task.file.type }), { access: 'public', contentType: task.file.type, handleUploadUrl: '/api/uploads', clientPayload: JSON.stringify({ requestId: task.requestId }), multipart: false });
+    }
     const completed = await post({ action: 'complete', requestId: task.requestId });
     return new Response(JSON.stringify(completed), { status: 200 });
   }

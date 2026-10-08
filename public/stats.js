@@ -10,11 +10,11 @@
       if (!response.ok) throw new Error('Unavailable');
       const data = await response.json();
       const rows = [
-        ['Environment', data.mode === 'local' ? 'Local preview — separate from live storage' : 'Live Blob storage'],
+        ['Environment', data.mode === 'local' ? 'Local preview — separate from live storage' : data.provider === 'supabase' ? 'Live Supabase storage' : 'Live Blob storage'],
         ['Active shares', String(data.activeShares)],
         ['Currently stored', format(data.storedBytes)],
         ['Space below allowance now', format(data.currentStorageHeadroomBytes)],
-        ['Monthly storage allowance', data.storageAllowanceBytes === null ? 'Not applicable locally' : format(data.storageAllowanceBytes) + '-month'],
+        [data.provider === 'supabase' ? 'Storage allowance' : 'Monthly storage allowance', data.storageAllowanceBytes === null ? 'Not applicable locally' : format(data.storageAllowanceBytes) + (data.provider === 'supabase' ? '' : '-month')],
         ['Monthly storage remaining', format(data.monthlyStorageRemainingBytes)],
         ['Monthly download remaining', format(data.monthlyTransferRemainingBytes)],
         ['File limit / expiry', '5 MB / 11 hours'],
@@ -23,7 +23,7 @@
       const list = document.createElement('dl');
       for (const [label, value] of rows) { const dt = document.createElement('dt'), dd = document.createElement('dd'); dt.textContent = label; dd.textContent = value; list.append(dt, dd); }
       const note = document.createElement('p');
-      note.textContent = 'Current storage is a snapshot, not monthly billed usage. Exact monthly usage and request allowances are available in the private Vercel dashboard. Stats may be cached for 5 minutes.';
+      note.textContent = 'Current storage is a snapshot, not monthly billed usage. Exact usage and request allowances are available in the private storage-provider dashboard. Stats may be cached for 5 minutes.';
       content.replaceChildren(list, note);
     } catch { content.textContent = 'Stats are temporarily unavailable. Close and try again later.'; }
   });

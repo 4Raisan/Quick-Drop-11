@@ -10,7 +10,7 @@ module.exports = async (req, res) => {
     const store = defaultStore();
     const item = (await activeRecords(store)).find(item => item.id === id || item.file?.storageId === id);
     if (!item?.file || item.file.pending) { res.writeHead(404); res.end('File expired or not found'); return; }
-    if (store.mode !== 'local') { res.writeHead(302, { Location: item.file.url }); res.end(); return; }
+    if (store.mode !== 'local') { res.writeHead(302, { Location: store.provider === 'supabase' ? await store.downloadUrl(item) : item.file.url }); res.end(); return; }
     const buffer = await store.readFile(item.file.storageId || item.id);
     res.writeHead(200, { 'Content-Type': item.file.type, 'Content-Length': buffer.length,
       'Content-Disposition': "attachment; filename*=UTF-8''" + encodeURIComponent(item.file.name) });

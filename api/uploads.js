@@ -10,6 +10,20 @@ module.exports = async (req, res) => {
     const store = defaultStore();
     if (store.mode === 'local') return send(res, 400, { error: 'Use local uploads' });
     const body = await readJson(req);
+    if (store.provider === 'supabase') {
+      if (body.action === 'prepare') {
+        const item = await reserve(store, body);
+        const signed = item.file.pending ? await store.signUpload(item) : null;
+        return send(res, 200, { item, provider: 'supabase', signedUploadUrl: signed?.signedUrl });
+      }
+      if (body.action === 'complete') {
+        const item = (await activeRecords(store)).find(record => record.requestId === body.requestId && record.file);
+        if (!item) return send(res, 404, { error: 'Upload reservation expired' });
+        const saved = await complete(store, store, item);
+        return send(res, 200, { success: true, item: saved });
+      }
+      return send(res, 400, { error: 'Unsupported upload action' });
+    }
     const blob = require('@vercel/blob');
     if (body.action === 'prepare') {
       const item = await reserve(store, body);

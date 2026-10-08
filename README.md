@@ -24,7 +24,7 @@ IDs range from 0000 to 9999, with at most 10,000 active reservations. Slots can 
 
 ![Quick Drop architecture](docs/diagrams/overview.svg)
 
-The frontend, upload handling, stats and storage adapters are separate modules. Production file uploads go directly to Blob; the API authorizes and verifies them before publishing a share. Local development uses isolated disk storage.
+The frontend, upload handling, stats and storage adapters are separate modules. Production file uploads go directly to Supabase Storage; the API authorizes and verifies them before publishing a share. Local development uses isolated disk storage.
 
 See the [architecture guide](docs/ARCHITECTURE.md) for component, upload-sequence and expiry diagrams, plus a debugging map. The [brand kit](docs/brand/README.md) includes the icon, wordmark and banner.
 
@@ -40,15 +40,19 @@ npm start
 
 Open http://localhost:3000. Run the build again after changing `frontend/uploads.js`; it creates the ignored browser bundle. Local shares persist in `.data/`, separately from production. The development server binds to loopback and does not automatically load `.env.local` or production credentials.
 
+## Supabase backend
+
+Use the [Supabase setup guide](docs/SUPABASE.md) and `supabase/schema.sql` to configure private file storage and Postgres share metadata. The server adapter is `lib/supabase-storage.js`. Direct uploads, four-digit IDs, 11-hour expiry and the public stats popup work with this backend. Connection requires the server-side variables and SQL setup; the adapter alone does not provision an account.
+
 ## Deploy to Vercel
 
-1. Import the GitHub repository into Vercel and connect a public Vercel Blob store.
-2. Configure the server-side `BLOB_READ_WRITE_TOKEN` and `CRON_SECRET` environment variables. See `.env.example`; never commit populated credentials.
+1. Import the GitHub repository into Vercel and configure Supabase using the guide above, or connect a public Supabase Storage (or legacy Vercel Blob) store for the legacy backend.
+2. Configure `QUICK_DROP_STORAGE_PROVIDER=supabase`, `QUICK_DROP_SUPABASE_URL`, `QUICK_DROP_SUPABASE_SERVICE_KEY` and `CRON_SECRET` on the server. See `.env.example`; never commit populated credentials.
 3. Set the build command to `npm run build` and the output directory to `public`. Keep the root `api/` functions enabled.
-4. Optionally set `PUBLIC_STORAGE_ALLOWANCE_BYTES` to match your plan. Its default is 1,000,000,000 bytes, displayed as the Hobby monthly allowance.
+4. Optionally set `QUICK_DROP_STORAGE_ALLOWANCE_BYTES` to match your plan. Its default is 1,000,000,000 bytes, displayed as the configured storage capacity.
 5. Verify text sharing, a 5 MiB attachment, retry behavior, search, deletion, stats and scheduled cleanup on the deployment before relying on it.
 
-Production attachments go **browser → Vercel Blob**, using short-lived upload tokens restricted to a reserved pathname, content type and size. The server checks the stored file's size, basic byte signature and SHA-256 before publishing its share. Large file bytes do not pass through the Vercel Function request body. Local uploads use the local file store.
+Production attachments go **browser → Supabase Storage**, using signed upload URLs for reserved paths. The private bucket restricts content types and file size. The server checks the stored file's size, basic byte signature and SHA-256 before publishing its share. Large file bytes do not pass through the Vercel Function request body. Local uploads use the local file store.
 
 `/api/cleanup` uses `CRON_SECRET` and the daily schedule in `vercel.json`. Feed access also removes expired records. Physical removal is periodic, rather than guaranteed at the exact expiry second. Cleanup removes sufficiently old orphan attachments as well.
 
@@ -56,13 +60,13 @@ Vercel has separate storage, transfer and operation allowances. See [Blob usage 
 
 ## Public stats and privacy
 
-The stats popup shows active share count, current stored bytes, space below the configured allowance, file limits and the last check time. Live storage totals include all objects in the connected Blob store. Local totals describe local share metadata and attachments, not cloud billing.
+The stats popup shows active share count, current stored bytes, space below the configured allowance, file limits and the last check time. Live Supabase storage totals include all objects in the Quick Drop bucket. Local totals describe local share metadata and attachments, not cloud billing.
 
-Current stored bytes are a snapshot, **not monthly billed usage**. Exact monthly storage remaining, download remaining and operation balances are unavailable in this implementation and are labeled accordingly. The private Vercel dashboard remains the source for billing usage. Stats are cached for five minutes per server instance.
+Current stored bytes are a snapshot, **not monthly billed usage**. Exact monthly storage remaining, download remaining and operation balances are unavailable in this implementation and are labeled accordingly. The private storage-provider dashboard remains the source for billing usage. Stats are cached for five minutes per server instance.
 
 Stats responses contain aggregate numbers only. They do not expose credentials, environment variables, account identifiers or file lists. Upload authorization uses server-side credentials; the browser receives a scoped temporary upload token.
 
-The feed and attachment URLs are public. Four-digit IDs are lookup shortcuts, not passwords. Deletion is communal. The app validates file type and signature but does not scan for malware. Local downloads enforce expiry; public Blob URLs may remain accessible until physical deletion, and downloaded or cached copies cannot be recalled. The persistent upload queue uses browser local storage and can be constrained by browser quota, especially for several large attachments.
+The feed and attachment URLs are public. Four-digit IDs are lookup shortcuts, not passwords. Deletion is communal. The app validates file type and signature but does not scan for malware. Local downloads enforce expiry; Supabase download links expire after at most 60 seconds; legacy public Blob URLs may remain accessible until physical deletion, and downloaded or cached copies cannot be recalled. The persistent upload queue uses browser local storage and can be constrained by browser quota, especially for several large attachments.
 
 ## Project structure
 

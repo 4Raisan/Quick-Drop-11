@@ -9,7 +9,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "build": "esbuild frontend/uploads.js --bundle --platform=browser --minify --outfile=public/uploads.bundle.js && node --check api/uploads.js && node --check api/stats.js && node --check lib/direct-uploads.js && node --check public/stats.js && node --check server.js && node --check api/texts.js && node --check lib/storage.js && node --check public/script.js && node --check api/cleanup.js && node --check scripts/migrate-legacy.js && node --check api/files.js && node --check lib/files.js",
+    "build": "esbuild frontend/uploads.js --bundle --platform=browser --minify --outfile=public/uploads.bundle.js && node --check api/uploads.js && node --check lib/supabase-storage.js && node --check api/stats.js && node --check lib/direct-uploads.js && node --check public/stats.js && node --check server.js && node --check api/texts.js && node --check lib/storage.js && node --check public/script.js && node --check api/cleanup.js && node --check scripts/migrate-legacy.js && node --check api/files.js && node --check lib/files.js",
     "test": "node --test",
     "migrate": "node scripts/migrate-legacy.js"
   },
@@ -24,6 +24,7 @@
   "author": "4Raisan",
   "license": "MIT",
   "dependencies": {
+    "@supabase/supabase-js": "^2.117.3",
     "@vercel/blob": "^2.8.0"
   },
   "devDependencies": {

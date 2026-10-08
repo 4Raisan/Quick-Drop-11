@@ -1,6 +1,6 @@
 # Architecture
 
-Quick Drop uses a static browser interface and small Node.js API handlers. The same feed logic runs against either local disk or Vercel Blob; local development never connects to production automatically.
+Quick Drop uses a static browser interface and small Node.js API handlers. The same feed logic runs against either local disk or Supabase Storage; local development never connects to production automatically.
 
 ## Components
 
