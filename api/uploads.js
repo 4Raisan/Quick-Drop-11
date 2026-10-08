@@ -29,5 +29,5 @@ module.exports = async (req, res) => {
       }
     });
     return send(res, 200, result);
-  } catch (err) { return send(res, err.status || 503, { error: err.status ? err.message : 'Upload service unavailable; please retry' }); }
+  } catch (err) { console.error('Upload service failure:', err.name, err.message); return send(res, err.status || 503, { error: err.status ? err.message : 'Upload service unavailable; please retry' }); }
 };
