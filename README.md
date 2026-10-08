@@ -2,6 +2,8 @@
 
 # Quick Drop
 
+**Live website:** [quickdrop11.vercel.app](https://quickdrop11.vercel.app)
+
 Share text, images and PDFs through a single public feed. Each share gets a **four-digit ID** so users can find it during busy periods. Shares expire after **11 hours**.
 
 **Quick start:** [Run locally](#run-locally) · [Deploy](#deploy-to-vercel) · [Architecture](#architecture-at-a-glance) · [Stats and privacy](#public-stats-and-privacy)
