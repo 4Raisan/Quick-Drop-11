@@ -1,7 +1,7 @@
 {
-  "name": "quickdrop",
+  "name": "quick-drop-11",
   "version": "1.1.0",
-  "description": "Public text, image and PDF sharing with four-digit IDs and 11-hour expiry",
+  "description": "Quick Drop 11: public text, image and PDF sharing with four-digit IDs and 11-hour expiry",
   "main": "server.js",
   "engines": {
     "node": ">=22"
@@ -14,7 +14,7 @@
     "migrate": "node scripts/migrate-legacy.js"
   },
   "keywords": [
-    "quick-drop",
+    "quick-drop-11",
     "text-transfer",
     "clipboard",
     "temporary-notes",
@@ -29,5 +29,10 @@
   },
   "devDependencies": {
     "esbuild": "^0.28.2"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/4Raisan/quick-drop-11.git"
+  },
+  "homepage": "https://quickdrop11.vercel.app"
 }

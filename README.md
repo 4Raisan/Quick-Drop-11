@@ -1,6 +1,8 @@
-![Quick Drop — share it, find it, move on](docs/brand/banner.svg)
+![Quick Drop 11 — share it, find it, move on](docs/brand/banner.svg)
 
-# Quick Drop
+# Quick Drop 11
+
+**Repository:** [4Raisan/quick-drop-11](https://github.com/4Raisan/quick-drop-11)
 
 **Live website:** [quickdrop11.vercel.app](https://quickdrop11.vercel.app)
 
@@ -22,7 +24,7 @@ IDs range from 0000 to 9999, with at most 10,000 active reservations. Slots can 
 
 ## Architecture at a glance
 
-![Quick Drop architecture](docs/diagrams/overview.svg)
+![Quick Drop 11 architecture](docs/diagrams/overview.svg)
 
 The frontend, upload handling, stats and storage adapters are separate modules. Production file uploads go directly to Supabase Storage; the API authorizes and verifies them before publishing a share. Local development uses isolated disk storage.
 
@@ -46,7 +48,7 @@ Use the [Supabase setup guide](docs/SUPABASE.md) and `supabase/schema.sql` to co
 
 ## Deploy to Vercel
 
-1. Import the GitHub repository into Vercel and configure Supabase using the guide above, or connect a public Supabase Storage (or legacy Vercel Blob) store for the legacy backend.
+1. Import the GitHub repository into Vercel and configure the private Supabase bucket and Postgres database using the guide above. Vercel Blob remains supported for legacy deployments.
 2. Configure `QUICK_DROP_STORAGE=supabase`, `QUICK_DROP_SUPABASE_URL`, `QUICK_DROP_SUPABASE_SERVICE_KEY` and `CRON_SECRET` on the server. See `.env.example`; never commit populated credentials.
 3. Set the build command to `npm run build` and the output directory to `public`. Keep the root `api/` functions enabled.
 4. Optionally set `QUICK_DROP_STORAGE_ALLOWANCE_BYTES` to match your plan. Its default is 1,000,000,000 bytes, displayed as the configured storage capacity.
@@ -56,11 +58,11 @@ Production attachments go **browser → Supabase Storage**, using signed upload 
 
 `/api/cleanup` uses `CRON_SECRET` and the daily schedule in `vercel.json`. Feed access also removes expired records. Physical removal is periodic, rather than guaranteed at the exact expiry second. Cleanup removes sufficiently old orphan attachments as well.
 
-Vercel has separate storage, transfer and operation allowances. See [Blob usage and pricing](https://vercel.com/docs/vercel-blob/usage-and-pricing) for current limits. Direct uploads bypass the Function payload limit; they do not increase storage allowances. The public app does not enforce a global billing quota.
+Supabase and Vercel have separate storage, transfer and operation allowances. Consult their dashboards for current plan usage. Direct uploads bypass the Function payload limit; they do not increase storage allowances. The public app does not enforce a global billing quota.
 
 ## Public stats and privacy
 
-The stats popup shows active share count, current stored bytes, space below the configured allowance, file limits and the last check time. Live Supabase storage totals include all objects in the Quick Drop bucket. Local totals describe local share metadata and attachments, not cloud billing.
+The stats popup shows active share count, current stored bytes, space below the configured allowance, file limits and the last check time. Live Supabase storage totals include all objects in the Quick Drop 11 bucket. Local totals describe local share metadata and attachments, not cloud billing.
 
 Current stored bytes are a snapshot, **not monthly billed usage**. Exact monthly storage remaining, download remaining and operation balances are unavailable in this implementation and are labeled accordingly. The private storage-provider dashboard remains the source for billing usage. Stats are cached for five minutes per server instance.
 
@@ -91,7 +93,7 @@ npm run build
 npm test
 ```
 
-The build generates the upload bundle and checks JavaScript syntax. Tests cover concurrent sharing, ID collisions, retries, file validation including 5 MiB files, storage failures, search, expiry and deletion. Live Blob integration requires a configured deployment check; local tests do not prove live credentials or provider configuration.
+The build generates the upload bundle and checks JavaScript syntax. Tests cover concurrent sharing, ID collisions, retries, file validation including 5 MiB files, storage failures, search, expiry and deletion. Live Supabase or legacy Blob integration requires a configured deployment check; local tests do not prove live credentials or provider configuration.
 
 ## Legacy migration
 
@@ -103,4 +105,4 @@ Commit source, tests, `package-lock.json`, configuration, `.env.example`, this R
 
 ## Rename compatibility
 
-Quick Drop preserves browser cache, theme and queued uploads from the earlier Temp-Transfer name. Existing storage paths and four-digit share links remain compatible. QUICK_DROP_STORAGE is the optional local remote-storage switch; the previous TEMP_TRANSFER_STORAGE variable remains a compatibility fallback. Renaming the app does not change an existing Vercel project name, domain or GitHub repository name.
+Quick Drop 11 preserves browser cache, theme and queued uploads from the earlier Temp-Transfer name. Existing storage paths and four-digit share links remain compatible. QUICK_DROP_STORAGE is the optional local remote-storage switch; the previous TEMP_TRANSFER_STORAGE variable remains a compatibility fallback. The repository is `4Raisan/quick-drop-11` and the live domain is `quickdrop11.vercel.app`. Vercel uses project name `quick-drop-11`; Supabase displays `Quick Drop 11`. Stable project IDs, storage paths and environment variable names are retained to preserve connectivity and pending uploads.

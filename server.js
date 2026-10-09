@@ -1,4 +1,4 @@
-// Quick Drop - Local Development Server
+// Quick Drop 11 - Local Development Server
 // In production on Vercel, static files are served by the Edge CDN
 // and api/texts.js is the serverless function. This file is only for local dev.
 const http = require('http');
@@ -108,6 +108,6 @@ if (require.main === module) {
   });
 
   server.listen(PORT, '127.0.0.1', () => {
-    console.log(`Quick Drop running at http://localhost:${PORT}`);
+    console.log(`Quick Drop 11 running at http://localhost:${PORT}`);
   });
 }

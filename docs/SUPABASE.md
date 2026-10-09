@@ -1,8 +1,8 @@
 # Supabase setup
 
-Quick Drop supports Supabase Postgres for share metadata and a private Storage bucket for images/PDFs. Existing Vercel Blob support remains available for rollback. The live switch requires completing these steps; installing the adapter alone does not connect a project.
+Quick Drop 11 supports Supabase Postgres for share metadata and a private Storage bucket for images/PDFs. Existing Vercel Blob support remains available for rollback. The live switch requires completing these steps; installing the adapter alone does not connect a project.
 
-1. Create a free Supabase project named Quick Drop. Keep its database password private.
+1. Create a free Supabase project named Quick Drop 11. Keep its database password private.
 2. Run `supabase/schema.sql` in the SQL editor. It creates `quickdrop_shares`, a private `quickdrop-files` bucket, a 5 MiB size/type restriction and a server-only storage statistics function.
 3. Configure these variables in Vercel, then redeploy:
    - `QUICK_DROP_STORAGE=supabase`

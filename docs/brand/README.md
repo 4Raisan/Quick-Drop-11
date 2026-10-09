@@ -1,4 +1,4 @@
-# Quick Drop brand assets
+# Quick Drop 11 brand assets
 
 The mark combines a drop with a lightning bolt: temporary sharing with a quick transfer. Blue and violet match the app's interface.
 
