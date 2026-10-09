@@ -4,9 +4,9 @@ Quick Drop 11 uses a static browser interface and small Node.js API handlers. Pr
 
 The overview separates the public browser from server credentials and the two production data stores. The API reserves IDs, issues scoped upload URLs, verifies attachments before publication, and issues short-lived download links. The diagram is a static image with no controls.
 
-## Components
+## System overview
 
-![Components and responsibilities](diagrams/components.svg)
+![Quick Drop 11 system overview](diagrams/overview.svg)
 
 The stats handler uses the Supabase storage totals RPC to obtain current stored bytes. The legacy Blob adapter lists its objects instead. Only aggregate figures reach the browser. Read/write credentials remain in server environment variables.
 
