@@ -4,6 +4,8 @@ Share text, images and PDFs between devices. Every share gets a **4-digit ID** a
 
 **[Open Quick Drop 11](https://quickdrop11.vercel.app/)** · [Setup guide](docs/SUPABASE.md) · [Architecture](docs/ARCHITECTURE.md)
 
+**Public feed:** Anyone can view shares. Four-digit IDs help people find a share and provide no access control.
+
 ## What you can do
 
 - Share text or an image/PDF up to **5 MB**.
@@ -11,8 +13,6 @@ Share text, images and PDFs between devices. Every share gets a **4-digit ID** a
 - Find shares by ID, text or filename.
 - Copy text, download files or open a QR link.
 - Check site storage stats, switch themes and retry queued uploads.
-
-The feed is public. IDs help you find a share; they do not make it private.
 
 ## How it works
 
