@@ -1,5 +1,8 @@
 <p align="center">
-  <img src="docs/brand/banner.svg" width="600" alt="Quick Drop 11">
+  <picture>
+    <source media="(prefers-reduced-motion: reduce)" srcset="docs/brand/banner-static.svg">
+    <img src="docs/brand/banner.svg" width="600" alt="Quick Drop 11">
+  </picture>
 </p>
 
 <p align="center">
