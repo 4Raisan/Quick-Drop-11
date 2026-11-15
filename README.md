@@ -1,8 +1,14 @@
-![Quick Drop 11](docs/brand/banner.svg)
+<p align="center">
+  <img src="docs/brand/banner.svg" width="600" alt="Quick Drop 11">
+</p>
+
+<p align="center">
+  <a href="https://github.com/4Raisan/Quick-Drop-11/actions/workflows/validate.yml"><img src="https://github.com/4Raisan/Quick-Drop-11/actions/workflows/validate.yml/badge.svg?branch=master" alt="Quick Drop 11 validation"></a>
+</p>
 
 Share text, images and PDFs between devices. Every share gets a **4-digit ID** and expires after **11 hours**.
 
-**[Open Quick Drop 11](https://quickdrop11.vercel.app/)** · [Setup guide](docs/SUPABASE.md) · [Architecture](docs/ARCHITECTURE.md)
+<p align="center"><strong><a href="https://quickdrop11.vercel.app/">Open Quick Drop 11</a></strong> · <a href="docs/SUPABASE.md">Setup guide</a> · <a href="docs/ARCHITECTURE.md">Architecture</a></p>
 
 **Public feed:** Anyone can view shares. Four-digit IDs help people find a share and provide no access control.
 
